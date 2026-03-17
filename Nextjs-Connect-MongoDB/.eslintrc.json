@@ -1,0 +1,29 @@
+{
+  "env": {
+    "browser": true, // 브라우저 환경을 지정. 브라우저에서 사용 가능한 전역 변수를 인식하는 설정.
+    "es2021": true   // ECMAScript 2021의 기능을 사용할 수 있는 환경 설정.
+  },
+  "extends": [
+    "eslint:recommended", // ESLint의 권장 설정을 사용. 기본적인 코드 오류나 주의 사항을 감지하는 규칙이 적용됨.
+    "plugin:@next/next/recommended", // Next.js 플러그인의 권장 설정을 사용. Next.js의 모범 사례를 기반으로 한 규칙이 적용됨.
+    "plugin:prettier/recommended",  // Prettier 플러그인의 권장 설정을 사용. Prettier와의 일관성을 유지하여 ESLint 규칙과 충돌하는 부분을 비활성화하고 코드 형식 오류를 방지.
+    "next/core-web-vitals", // Next.js의 코어 웹 바이탈 성능을 최적화하기 위한 규칙을 추가.
+    "plugin:@typescript-eslint/recommended", // TypeScript와 관련된 권장 규칙을 추가하여 TypeScript 코드에 대한 오류를 감지.
+    "next/typescript" // Next.js와 TypeScript를 함께 사용할 때 권장되는 규칙을 추가.
+  ],
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true // JSX 구문 지원을 활성화. React 컴포넌트에서 JSX를 사용할 때 필요.
+    },
+    "ecmaVersion": 12, // ECMAScript 2021(ES12) 문법을 지원.
+    "sourceType": "module" // 모듈로 간주되어, ES 모듈(import/export 구문)을 지원.
+  },
+  "parser": "@typescript-eslint/parser", // TypeScript 파일(.ts, .tsx)을 분석하기 위한 파서 지정.
+  "plugins": ["@typescript-eslint","prettier"], // TypeScript와 ESLint의 연동을 위한 플러그인 추가.
+  "rules": {
+    "prettier/prettier": ["error", { "endOfLine": "auto" }], // Prettier의 규칙을 따르지 않는 코드를 오류로 처리하며, 플랫폼별로 다른 개행 문자 문제를 방지하기 위해 'auto'로 설정.
+    "react/react-in-jsx-scope": "off", // React 17 이상에서는 JSX에서 React를 import할 필요가 없으므로 이 규칙을 비활성화.
+    "@typescript-eslint/explicit-module-boundary-types": "off", // 모듈 경계에서 타입을 명시적으로 지정하지 않도록 허용.
+    "@typescript-eslint/no-unused-vars": ["error", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false }] // 사용되지 않는 변수에 대해 오류를 표시하여 코드 정리를 유도.
+  }
+}
