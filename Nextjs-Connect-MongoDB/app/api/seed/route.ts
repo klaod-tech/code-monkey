@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '../../../db/dbConnect';
-import Product from '../../../db/models/Product';
+import { NextResponse } from 'next/server'
+import dbConnect from '../../../db/dbConnect'
+import Product from '../../../db/models/Product'
+
+export const dynamic = 'force-dynamic'
 
 const sampleProducts = [
   {
@@ -72,22 +74,25 @@ const sampleProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500&q=80',
     origin: '대한민국 전라남도 보성',
     features: '첫물차(우전)만을 정성껏 채엽하여 은은하고 깊은 향을 머금은 프리미엄 녹차입니다.',
-  }
-];
+  },
+]
 
 export async function GET() {
-  await dbConnect();
+  await dbConnect()
 
   try {
     // 기존 데이터 초기화
-    await Product.deleteMany({});
-    
+    await Product.deleteMany({})
+
     // 원산지와 특징이 포함된 새 샘플 데이터 삽입
-    const products = await Product.insertMany(sampleProducts);
-    
-    return NextResponse.json({ message: '10개의 샘플 데이터가 성공적으로 추가되었습니다!', count: products.length }, { status: 201 });
+    const products = await Product.insertMany(sampleProducts)
+
+    return NextResponse.json(
+      { message: '10개의 샘플 데이터가 성공적으로 추가되었습니다!', count: products.length },
+      { status: 201 }
+    )
   } catch (error) {
-    console.error('Data Seeding Error:', error);
-    return NextResponse.json({ message: '샘플 데이터 추가 중 오류가 발생했습니다.' }, { status: 500 });
+    console.error('Data Seeding Error:', error)
+    return NextResponse.json({ message: '샘플 데이터 추가 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }

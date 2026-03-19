@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/db/dbConnect'
 import User from '@/db/models/user'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * @description nickname 중복 확인 + 사용자 정보 표시
  * @searchParams nickname
