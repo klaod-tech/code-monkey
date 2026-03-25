@@ -124,6 +124,20 @@ function writeStoredItems<T>(key: string, items: T[]) {
   localStorage.setItem(key, JSON.stringify(items))
 }
 
+async function updateServerStock(productId: string, delta: number) {
+  const response = await fetch('/api/products/stock', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productId, delta }),
+  })
+
+  const data = (await response.json()) as { success?: boolean; stock?: number; message?: string }
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.message ?? '재고 변경에 실패했습니다.')
+  }
+}
+
 function parseCartItem(item: SummaryItem): CartItem {
   const quantityMatch = item.subtitle.match(/(\d+)/)
   const priceMatch = item.subtitle.match(/([\d,]+)(?!.*[\d,])/)
@@ -309,15 +323,33 @@ export default function MyPage() {
     writeStoredItems('mypageCart', nextItems.map(toSummaryItem))
   }
 
-  const updateCartQuantity = (itemId: string, nextQuantity: number) => {
-    if (nextQuantity < 1) {
-      const nextItems = cartItems.filter((item) => item.id !== itemId)
-      syncCartItems(nextItems)
-      setMessage('장바구니 상품을 삭제했습니다.')
+  const updateCartQuantity = async (itemId: string, nextQuantity: number) => {
+    const currentItem = cartItems.find((item) => item.id === itemId)
+
+    if (!currentItem) {
       return
     }
 
-    syncCartItems(cartItems.map((item) => (item.id === itemId ? { ...item, quantity: nextQuantity } : item)))
+    const delta = nextQuantity - currentItem.quantity
+
+    if (nextQuantity < 1) {
+      try {
+        await updateServerStock(itemId, currentItem.quantity)
+        const nextItems = cartItems.filter((item) => item.id !== itemId)
+        syncCartItems(nextItems)
+        setMessage('장바구니 상품을 삭제했습니다.')
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+      }
+      return
+    }
+
+    try {
+      await updateServerStock(itemId, -delta)
+      syncCartItems(cartItems.map((item) => (item.id === itemId ? { ...item, quantity: nextQuantity } : item)))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+    }
   }
 
   const removeOrderItem = (orderId: string) =>

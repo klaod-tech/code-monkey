@@ -50,6 +50,22 @@ function saveStoredCartItems(items: StoredCartItem[]) {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
 }
 
+async function updateServerStock(productId: string, delta: number) {
+  const response = await fetch('/api/products/stock', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productId, delta }),
+  })
+
+  const data = (await response.json()) as { success?: boolean; stock?: number; message?: string }
+
+  if (!response.ok || !data.success || typeof data.stock !== 'number') {
+    throw new Error(data.message ?? '재고 변경에 실패했습니다.')
+  }
+
+  return data.stock
+}
+
 function extractQuantity(item: StoredCartItem) {
   if (typeof item.quantity === 'number' && Number.isFinite(item.quantity) && item.quantity > 0) {
     return item.quantity
@@ -167,6 +183,13 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
     setCheckedProductIds((prev) => prev.filter((id) => nextItems.some((item) => item.id === id)))
   }
 
+  const syncProductStock = (productId: string, nextStock: number) => {
+    setProductsState((prev) =>
+      prev.map((item) => (item._id === productId ? { ...item, stock: Math.max(0, nextStock) } : item))
+    )
+    setSelectedProduct((prev) => (prev && prev._id === productId ? { ...prev, stock: Math.max(0, nextStock) } : prev))
+  }
+
   const updateProductQuantity = (productId: string, delta: number) => {
     setProductQuantities((prev) => {
       const product = productsState.find((item) => item._id === productId)
@@ -188,7 +211,7 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
     )
   }
 
-  const addToCart = (product: ProductItem) => {
+  const addToCart = async (product: ProductItem) => {
     const quantity = getProductQuantity(product._id)
 
     if (product.stock < quantity) {
@@ -199,7 +222,7 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
     const existingItem = cartItems.find((item) => item.id === product._id)
     const nextQuantity = (existingItem ? extractQuantity(existingItem) : 0) + quantity
 
-    if (nextQuantity > product.stock) {
+    if (quantity > product.stock) {
       setMessage('재고를 초과해서 장바구니에 담을 수 없습니다.')
       return
     }
@@ -228,13 +251,20 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
           ...cartItems,
         ]
 
-    updateLocalCart(nextItems)
+    try {
+      const nextStock = await updateServerStock(product._id, -quantity)
+      updateLocalCart(nextItems)
+      syncProductStock(product._id, nextStock)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+      return
+    }
     setCheckedProductIds((prev) => (prev.includes(product._id) ? prev : [...prev, product._id]))
     setIsCartOpen(true)
     setMessage('장바구니에 담았습니다.')
   }
 
-  const updateCartQuantity = (productId: string, delta: number) => {
+  const updateCartQuantity = async (productId: string, delta: number) => {
     const cartItem = cartItems.find((item) => item.id === productId)
     const product = productsState.find((item) => item._id === productId)
 
@@ -246,33 +276,58 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
     const nextQuantity = currentQuantity + delta
 
     if (nextQuantity <= 0) {
-      updateLocalCart(cartItems.filter((item) => item.id !== productId))
-      setMessage('장바구니 상품을 삭제했습니다.')
+      try {
+        const nextStock = await updateServerStock(productId, currentQuantity)
+        updateLocalCart(cartItems.filter((item) => item.id !== productId))
+        syncProductStock(productId, nextStock)
+        setMessage('장바구니 상품을 삭제했습니다.')
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+      }
       return
     }
 
-    if (nextQuantity > product.stock) {
+    if (delta > 0 && delta > product.stock) {
       setMessage('현재 재고보다 많은 수량으로 변경할 수 없습니다.')
       return
     }
 
-    updateLocalCart(
-      cartItems.map((item) =>
-        item.id === productId
-          ? {
-              ...item,
-              quantity: nextQuantity,
-              subtitle: buildCartSubtitle(nextQuantity, product.price),
-              unitPrice: product.price,
-            }
-          : item
+    try {
+      const nextStock = await updateServerStock(productId, -delta)
+      updateLocalCart(
+        cartItems.map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                quantity: nextQuantity,
+                subtitle: buildCartSubtitle(nextQuantity, product.price),
+                unitPrice: product.price,
+              }
+            : item
+        )
       )
-    )
+      syncProductStock(productId, nextStock)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+    }
   }
 
-  const removeCartItem = (productId: string) => {
-    updateLocalCart(cartItems.filter((item) => item.id !== productId))
-    setMessage('장바구니 상품을 삭제했습니다.')
+  const removeCartItem = async (productId: string) => {
+    const cartItem = cartItems.find((item) => item.id === productId)
+    const restoreQuantity = cartItem ? extractQuantity(cartItem) : 0
+
+    if (!cartItem || restoreQuantity <= 0) {
+      return
+    }
+
+    try {
+      const nextStock = await updateServerStock(productId, restoreQuantity)
+      updateLocalCart(cartItems.filter((item) => item.id !== productId))
+      syncProductStock(productId, nextStock)
+      setMessage('장바구니 상품을 삭제했습니다.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '재고 변경에 실패했습니다.')
+    }
   }
 
   const openCheckoutWithItems = (draft: CheckoutDraft) => {
@@ -304,16 +359,6 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
   const goToCartCheckout = () => {
     if (checkedCartItems.length === 0) {
       setMessage('체크한 장바구니 상품이 없습니다.')
-      return
-    }
-
-    const invalidItem = checkedCartItems.find((item) => {
-      const product = productsState.find((productItem) => productItem._id === item.id)
-      return !product || product.stock < extractQuantity(item)
-    })
-
-    if (invalidItem) {
-      setMessage(`${invalidItem.title} 상품의 재고가 부족합니다.`)
       return
     }
 

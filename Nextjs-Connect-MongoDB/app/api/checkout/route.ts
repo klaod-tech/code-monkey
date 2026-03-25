@@ -15,6 +15,7 @@ type CheckoutItem = {
 
 type CheckoutBody = {
   username?: string
+  source?: 'single' | 'cart' | 'purchase'
   recipientName?: string
   recipientPhone?: string
   recipientAddress?: string
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CheckoutBody
     const username = trimText(body.username)
+    const source = body.source === 'cart' ? 'cart' : 'single'
     const recipientName = trimText(body.recipientName)
     const recipientPhone = trimText(body.recipientPhone)
     const recipientAddress = trimText(body.recipientAddress)
@@ -81,31 +83,34 @@ export async function POST(request: NextRequest) {
 
     const updatedStocks: Array<{ productId: string; quantity: number }> = []
 
-    for (const item of items) {
-      const updatedProduct = await Product.findOneAndUpdate(
-        { _id: item.productId, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
-        { new: true }
-      )
+    if (source !== 'cart') {
+      for (const item of items) {
+        const updatedProduct = await Product.findOneAndUpdate(
+          { _id: item.productId, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } },
+          { new: true }
+        )
 
-      if (!updatedProduct) {
-        if (updatedStocks.length > 0) {
-          await Promise.all(
-            updatedStocks.map((stockItem) =>
-              Product.findByIdAndUpdate(stockItem.productId, { $inc: { stock: stockItem.quantity } })
+        if (!updatedProduct) {
+          if (updatedStocks.length > 0) {
+            await Promise.all(
+              updatedStocks.map((stockItem) =>
+                Product.findByIdAndUpdate(stockItem.productId, { $inc: { stock: stockItem.quantity } })
+              )
             )
-          )
+          }
+
+          return NextResponse.json({ success: false, message: `${item.title} 재고가 부족합니다.` }, { status: 409 })
         }
 
-        return NextResponse.json({ success: false, message: `${item.title} 재고가 부족합니다.` }, { status: 409 })
+        updatedStocks.push({ productId: item.productId, quantity: item.quantity })
       }
-
-      updatedStocks.push({ productId: item.productId, quantity: item.quantity })
     }
 
     const orderedAt = new Date().toISOString()
+    const timestampSeed = Date.now()
     const newOrders = items.map((item, index) => ({
-      id: `${item.productId}-${Date.now()}-${index}`,
+      id: `${item.productId}-${timestampSeed}-${index}`,
       title: item.title,
       subtitle: `${formatOrderTimestamp(orderedAt)} / 수량 ${item.quantity}개 / ${formatPrice(
         item.unitPrice * item.quantity
@@ -140,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${recipientName}님 주문이 완료되었습니다.`,
+      message: `${recipientName}님의 주문이 완료되었습니다.`,
       orders: Array.isArray(updatedUser.orderHistory) ? updatedUser.orderHistory : newOrders,
       recipient: {
         name: recipientName,

@@ -157,6 +157,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: currentUser.username,
+          source: draft.source,
           recipientName,
           recipientPhone,
           recipientAddress,
