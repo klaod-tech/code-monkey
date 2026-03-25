@@ -462,12 +462,6 @@ export default function MyPage() {
           X
         </button>
 
-        {message ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {message}
-          </div>
-        ) : null}
-
         <section className="grid gap-6 lg:grid-cols-2">
           <article className="rounded-[2rem] bg-white p-7 shadow-[0_20px_50px_rgba(148,163,184,0.12)]">
             <div className="flex items-center justify-between">

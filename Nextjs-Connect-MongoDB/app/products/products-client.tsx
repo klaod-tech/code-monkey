@@ -388,12 +388,6 @@ export default function ProductsClient({ products }: { products: ProductItem[] }
         </div>
       </header>
 
-      {message ? (
-        <div className="border-y border-emerald-200 bg-emerald-50 px-6 py-4 text-sm font-medium text-emerald-700">
-          {message}
-        </div>
-      ) : null}
-
       <section className="min-w-0 px-0 py-0">
         {filteredProducts.length === 0 ? (
           <div className="px-8 py-10 text-lg font-semibold text-slate-500">상품을 찾을 수 없습니다.</div>
