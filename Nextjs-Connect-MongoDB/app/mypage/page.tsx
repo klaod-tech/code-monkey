@@ -217,6 +217,7 @@ function normalizeUser(user?: MyPageUser) {
         }
       : { ...emptyAddress },
     paymentCard: {
+      ...emptyPaymentCard,
       cardCompany: trimText(user?.paymentCard?.cardCompany),
       cardHolder: trimText(user?.paymentCard?.cardHolder),
       cardNumberLast4: trimText(user?.paymentCard?.cardNumberLast4),
@@ -258,7 +259,9 @@ export default function MyPage() {
     if (storedProfile) {
       try {
         setUser(JSON.parse(storedProfile) as ReturnType<typeof normalizeUser>)
-      } catch {}
+      } catch {
+        localStorage.removeItem(MYPAGE_PROFILE_KEY)
+      }
     }
 
     setOrderHistory(readStoredItems<SummaryItem>('mypageOrders'))
