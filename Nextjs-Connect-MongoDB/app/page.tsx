@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { FormEvent, useState, useTransition } from 'react'
 
 type LoginResult = {
@@ -10,10 +11,12 @@ type LoginResult = {
     username: string
     name: string
     email: string
+    phone: string
   }
 }
 
 export default function LoginPage() {
+  const router = useRouter()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [result, setResult] = useState<LoginResult | null>(null)
@@ -35,46 +38,41 @@ export default function LoginPage() {
 
       const data = (await response.json()) as LoginResult
       setResult(data)
+
+      if (data.success) {
+        if (data.user) {
+          localStorage.setItem('currentUser', JSON.stringify(data.user))
+        }
+        router.push('/products')
+      }
     })
   }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#fff2d8_0%,#f7fafc_35%,#dbeafe_100%)] px-4 py-10 text-slate-900">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center justify-center">
-        <section className="grid w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur md:grid-cols-[1.1fr_0.9fr]">
-          <div className="flex flex-col justify-between bg-slate-950 px-8 py-10 text-white md:px-12 md:py-12">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl items-center justify-center">
+        <section className="grid w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="flex flex-col justify-center bg-slate-950 px-8 py-12 text-white md:px-12 lg:px-14">
             <div>
               <p className="mb-4 inline-flex rounded-full border border-white/20 px-4 py-1 text-sm text-amber-200">
                 Member Access
               </p>
-              <h1 className="max-w-md text-4xl font-black leading-tight md:text-5xl">서비스 이용을 위한 로그인 화면</h1>
-              <p className="mt-5 max-w-md text-sm leading-6 text-slate-300 md:text-base">
-                아이디와 비밀번호로 로그인하고, 처음 방문한 사용자는 아래 회원가입으로 바로 이동할 수 있습니다.
+              <h1 className="max-w-xl text-4xl font-black leading-tight md:text-5xl lg:text-6xl">
+                서비스 이용을 위한 로그인 화면
+              </h1>
+              <p className="mt-6 max-w-lg text-base leading-8 text-slate-300">
+                아이디와 비밀번호를 입력해 바로 로그인할 수 있습니다. 처음 방문한 사용자는 회원가입으로 이동해 계정을
+                만든 뒤 상품 페이지로 진입할 수 있습니다.
               </p>
-            </div>
-
-            <div className="mt-10 grid gap-4 text-sm text-slate-200 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-semibold">간단한 로그인</p>
-                <p className="mt-2 text-slate-300">아이디와 비밀번호만 입력하면 됩니다.</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-semibold">이메일 인증</p>
-                <p className="mt-2 text-slate-300">회원가입 시 인증번호 확인을 거칩니다.</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="font-semibold">즉시 가입 이동</p>
-                <p className="mt-2 text-slate-300">로그인 아래 회원가입 링크가 연결됩니다.</p>
-              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center px-6 py-10 md:px-10">
-            <div className="w-full max-w-md">
+          <div className="flex items-center justify-center px-6 py-10 md:px-10 lg:px-14">
+            <div className="w-full max-w-xl">
               <div className="mb-8">
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Login</p>
-                <h2 className="mt-3 text-3xl font-black text-slate-900">로그인</h2>
-                <p className="mt-2 text-sm text-slate-500">등록된 회원 정보로 바로 접속할 수 있습니다.</p>
+                <h2 className="mt-3 text-3xl font-black text-slate-900 md:text-4xl">로그인</h2>
+                <p className="mt-2 text-sm text-slate-500 md:text-base">등록된 회원 정보로 바로 접속할 수 있습니다.</p>
               </div>
 
               <form className="space-y-5" onSubmit={handleSubmit}>
@@ -85,7 +83,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     placeholder="아이디를 입력해 주세요"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
                     required
                   />
                 </label>
@@ -97,7 +95,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="비밀번호를 입력해 주세요"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
                     required
                   />
                 </label>
@@ -105,7 +103,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  className="w-full rounded-2xl bg-slate-950 px-4 py-4 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
                   {isPending ? '로그인 중...' : '로그인'}
                 </button>

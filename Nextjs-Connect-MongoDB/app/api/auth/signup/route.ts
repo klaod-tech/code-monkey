@@ -62,7 +62,16 @@ export async function POST(request: NextRequest) {
 
     await EmailVerification.deleteOne({ email: normalizedEmail })
 
-    return NextResponse.json({ success: true, message: '회원가입이 완료되었습니다. 로그인해 주세요.' })
+    return NextResponse.json({
+      success: true,
+      message: '회원가입이 완료되었습니다.',
+      user: {
+        username: normalizedUsername,
+        name: name.trim(),
+        email: normalizedEmail,
+        phone: phone.trim(),
+      },
+    })
   } catch (error) {
     console.error('Signup error:', error)
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import dbConnect from '../../../db/dbConnect'
-import Product from '../../../db/models/Product'
+
+import dbConnect from '@/db/dbConnect'
+import Product from '@/db/models/Product'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,7 @@ const sampleProducts = [
     price: 25000,
     imageUrl: 'https://images.unsplash.com/photo-1611080626919-7cf5a9db69f4?w=500&q=80',
     origin: '대한민국 제주특별자치도',
-    features: '제주 청정 지역에서 무농약으로 재배된 새콤달콤한 고당도 감귤입니다.',
+    features: '제주 청정 지역에서 무농약으로 재배해 상큼하고 달콤한 감귤입니다.',
   },
   {
     name: '프리미엄 횡성 한우 등심 500g',
@@ -48,7 +49,7 @@ const sampleProducts = [
     features: '항공 직송으로 신선도를 유지한 프리미엄 슈페리어급 생연어입니다.',
   },
   {
-    name: '유기농 아보카도 5입',
+    name: '유기농 아보카도 5개',
     price: 15000,
     imageUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=500&q=80',
     origin: '멕시코',
@@ -59,21 +60,21 @@ const sampleProducts = [
     price: 22000,
     imageUrl: 'https://images.unsplash.com/photo-1601493699865-c38aae11d2e0?w=500&q=80',
     origin: '대한민국 경상북도 성주',
-    features: '아삭한 식감과 꿀처럼 달콤한 과육이 꽉 찬 최상급 참외입니다.',
+    features: '아삭한 식감과 꿀처럼 달콤한 과즙이 꽉 찬 최상급 참외입니다.',
   },
   {
     name: '순창 발효 고추장 1kg',
     price: 28000,
     imageUrl: 'https://images.unsplash.com/photo-1600850056064-a8f379df4939?w=500&q=80',
     origin: '대한민국 전라북도 순창',
-    features: '100% 국산 고춧가루와 메주로 전통 방식을 살려 깊은 맛을 낸 고추장입니다.',
+    features: '100% 국산 고춧가루와 메주로 전통 방식으로 빚어 깊은 맛을 낸 고추장입니다.',
   },
   {
     name: '보성 녹차잎 100g',
     price: 35000,
     imageUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500&q=80',
     origin: '대한민국 전라남도 보성',
-    features: '첫물차(우전)만을 정성껏 채엽하여 은은하고 깊은 향을 머금은 프리미엄 녹차입니다.',
+    features: '첫물차만 정성껏 채엽하여 은은하고 깊은 향을 머금은 프리미엄 녹차잎입니다.',
   },
 ]
 
@@ -81,18 +82,15 @@ export async function GET() {
   await dbConnect()
 
   try {
-    // 기존 데이터 초기화
     await Product.deleteMany({})
-
-    // 원산지와 특징이 포함된 새 샘플 데이터 삽입
-    const products = await Product.insertMany(sampleProducts)
+    const products = await Product.insertMany(sampleProducts.map((product) => ({ ...product, stock: 100 })))
 
     return NextResponse.json(
-      { message: '10개의 샘플 데이터가 성공적으로 추가되었습니다!', count: products.length },
+      { message: `${products.length}개의 샘플 상품을 불러왔습니다.`, count: products.length },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Data Seeding Error:', error)
-    return NextResponse.json({ message: '샘플 데이터 추가 중 오류가 발생했습니다.' }, { status: 500 })
+    console.error('Data seeding error:', error)
+    return NextResponse.json({ message: '샘플 상품을 불러오는 중 오류가 발생했습니다.' }, { status: 500 })
   }
 }

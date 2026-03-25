@@ -1,11 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { FormEvent, useMemo, useState, useTransition } from 'react'
 
 type ApiResponse = {
   success?: boolean
   message: string
+  user?: {
+    username: string
+    name: string
+    email: string
+    phone: string
+  }
 }
 
 type SignUpForm = {
@@ -29,6 +36,7 @@ const initialForm: SignUpForm = {
 }
 
 export default function SignupPage() {
+  const router = useRouter()
   const [form, setForm] = useState<SignUpForm>(initialForm)
   const [sendResult, setSendResult] = useState<ApiResponse | null>(null)
   const [verifyResult, setVerifyResult] = useState<ApiResponse | null>(null)
@@ -138,6 +146,10 @@ export default function SignupPage() {
         setVerifiedEmail('')
         setSendResult(null)
         setVerifyResult(null)
+        if (data.user) {
+          localStorage.setItem('currentUser', JSON.stringify(data.user))
+        }
+        router.push('/products')
       }
     })
   }

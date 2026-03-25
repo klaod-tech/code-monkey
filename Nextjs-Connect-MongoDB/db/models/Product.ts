@@ -1,11 +1,12 @@
-import mongoose, { Document, Model } from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose'
 
 export interface IProduct extends Document {
-  name: string;
-  price: number;
-  imageUrl: string;
-  origin: string;
-  features: string;
+  name: string
+  price: number
+  imageUrl: string
+  origin: string
+  features: string
+  stock: number
 }
 
 const ProductSchema = new mongoose.Schema<IProduct>(
@@ -15,13 +16,21 @@ const ProductSchema = new mongoose.Schema<IProduct>(
     imageUrl: { type: String, required: true },
     origin: { type: String, required: true },
     features: { type: String, required: true },
+    stock: { type: Number, required: true, default: 100, min: 0 },
   },
   {
     timestamps: true,
   }
-);
+)
 
-const Product: Model<IProduct> =
-  mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+const existingProductModel = mongoose.models.Product as Model<IProduct> | undefined
 
-export default Product;
+if (existingProductModel && !existingProductModel.schema.path('stock')) {
+  existingProductModel.schema.add({
+    stock: { type: Number, required: true, default: 100, min: 0 },
+  })
+}
+
+const Product: Model<IProduct> = existingProductModel || mongoose.model<IProduct>('Product', ProductSchema)
+
+export default Product
