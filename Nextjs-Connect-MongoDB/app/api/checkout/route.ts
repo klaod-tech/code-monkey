@@ -26,6 +26,8 @@ type OrderHistoryItem = {
   id: string
   title: string
   subtitle: string
+  productId?: string
+  quantity?: number
   createdAt?: string
 }
 
@@ -108,6 +110,8 @@ export async function POST(request: NextRequest) {
       subtitle: `${formatOrderTimestamp(orderedAt)} / 수량 ${item.quantity}개 / ${formatPrice(
         item.unitPrice * item.quantity
       )}`,
+      productId: item.productId,
+      quantity: item.quantity,
       createdAt: orderedAt,
     }))
 

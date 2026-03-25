@@ -330,11 +330,18 @@ export default function MyPage() {
       writeStoredItems('mypageOrders', nextOrders)
 
       if (parsedUser?.username) {
-        await fetch('/api/mypage/orders', {
+        const response = await fetch('/api/mypage/orders', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: parsedUser.username, orderId }),
         })
+
+        if (!response.ok) {
+          setOrderHistory(orderHistory)
+          writeStoredItems('mypageOrders', orderHistory)
+          setMessage('二쇰Ц ?댁뿭 ???뚯냼?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.')
+          return
+        }
       }
 
       setMessage('주문 내역을 삭제했습니다.')

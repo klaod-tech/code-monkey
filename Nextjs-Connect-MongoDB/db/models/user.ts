@@ -27,6 +27,8 @@ const orderHistoryItemSchema = new mongoose.Schema(
     id: { type: String, required: true, trim: true },
     title: { type: String, default: '', trim: true },
     subtitle: { type: String, default: '', trim: true },
+    productId: { type: String, default: '', trim: true },
+    quantity: { type: Number, default: 0, min: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }

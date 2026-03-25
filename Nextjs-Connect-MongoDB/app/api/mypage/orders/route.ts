@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import dbConnect from '@/db/dbConnect'
+import Product from '@/db/models/Product'
 import User from '@/db/models/user'
 
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,8 @@ type OrderHistoryItem = {
   id: string
   title: string
   subtitle: string
+  productId?: string
+  quantity?: number
   createdAt?: string
 }
 
@@ -73,6 +76,8 @@ function normalizeOrder(order: Partial<OrderHistoryItem>, index = 0): OrderHisto
     id,
     title,
     subtitle,
+    productId: trimText(order.productId),
+    quantity: Number(order.quantity ?? 0),
     createdAt: order.createdAt ?? new Date().toISOString(),
   }
 }
@@ -170,6 +175,26 @@ export async function DELETE(request: NextRequest) {
     }
 
     await dbConnect()
+
+    const user = (await User.findOne({ username: body.username.trim() }).lean()) as UserProfile | null
+
+    if (!user) {
+      return NextResponse.json({ success: false, message: '?ъ슜?먮? 李얠쓣 ???놁뒿?덈떎.' }, { status: 404 })
+    }
+
+    const targetOrder = Array.isArray(user.orderHistory)
+      ? user.orderHistory.find((order) => trimText(order.id) === body.orderId?.trim())
+      : null
+
+    if (!targetOrder) {
+      return NextResponse.json({ success: false, message: '二쇰Ц ?댁뿭???李얠쓣 ???놁뒿?덈떎.' }, { status: 404 })
+    }
+
+    if (trimText(targetOrder.productId) && Number(targetOrder.quantity ?? 0) > 0) {
+      await Product.findByIdAndUpdate(trimText(targetOrder.productId), {
+        $inc: { stock: Number(targetOrder.quantity ?? 0) },
+      })
+    }
 
     const updatedUser = (await User.findOneAndUpdate(
       { username: body.username.trim() },
